@@ -8,16 +8,13 @@
 #User Inputs
 
 #Geometry
-
-#Geometry = "Shell_inside_cube_separate_bodies2.geo"
+Geometry = "Shell_inside_cube_separate_bodies.geo"
 #(string) Name of the .geo file to be used in the frequency sweep i.e.
-#Geometry = "sph_shell.geo"
-Geometry = "output.geo"
+# "sphere.geo"
 
 
 #Scaling to be used in the sweep in meters
-#alpha = 0.0345 # shell raduis is 1 unit, but actual is 3.45cm
-alpha=0.001
+alpha = 0.002
 #(float) scaling to be applied to the .geo file i.e. if you have defined
 #a sphere of unit radius in a .geo file   alpha = 0.01   would simulate a
 #sphere with a radius of 0.01m ( or 1cm)
@@ -47,7 +44,7 @@ Points = 81
 #(int) the number of logarithmically spaced points in the sweep
 
 #I only require a single frequency
-Single = False
+Single = True
 #(boolean) True if single frequency is required
 Omega = 133.5
 #(float) the frequency to be solved if Single = True
