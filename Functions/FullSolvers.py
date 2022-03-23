@@ -22,18 +22,19 @@ from Settings import SolverParameters
 
 
 #Function definition for a full order frequency sweep
-def FullSweep(Object,Order,alpha,inorout,mur,sig,Array,BigProblem):
+def FullSweep(Object,Order,alpha,inorout,mur,sig,Array,BigProblem,Stepmesh):
     Object = Object[:-4]+".vol"
     #Set up the Solver Parameters
     Solver,epsi,Maxsteps,Tolerance = SolverParameters()
-    
+
     #Loading the object file
     ngmesh = ngmeshing.Mesh(dim=3)
     ngmesh.Load("VolFiles/"+Object)
-    
+
     #Creating the mesh and defining the element types
     mesh = Mesh("VolFiles/"+Object)
-    mesh.Curve(5)#This can be used to refine the mesh
+    if Stepmesh ==  False:
+        mesh.Curve(5)#This can be used to refine the mesh
     numelements = mesh.ne#Count the number elements
     print(" mesh contains "+str(numelements)+" elements")
 
@@ -48,7 +49,7 @@ def FullSweep(Object,Order,alpha,inorout,mur,sig,Array,BigProblem):
     inout = CoefficientFunction(inout_coef)
     sigma_coef = [sig[mat] for mat in mesh.GetMaterials() ]
     sigma = CoefficientFunction(sigma_coef)
-    
+
     #Set up how the tensor and eigenvalues will be stored
     N0=np.zeros([3,3])
     R=np.zeros([3,3])
@@ -65,21 +66,21 @@ def FullSweep(Object,Order,alpha,inorout,mur,sig,Array,BigProblem):
     fes = HCurl(mesh, order=Order, dirichlet="outer", flags = { "nograds" : True })
     #Count the number of degrees of freedom
     ndof = fes.ndof
-    
+
     #Define the vectors for the right hand side
     evec = [ CoefficientFunction( (1,0,0) ), CoefficientFunction( (0,1,0) ), CoefficientFunction( (0,0,1) ) ]
-    
+
     #Setup the grid functions and array which will be used to save
     Theta0i = GridFunction(fes)
     Theta0j = GridFunction(fes)
     Theta0Sol = np.zeros([ndof,3])
-    
-    
+
+
     #Run in three directions and save in an array for later
     for i in range(3):
         Theta0Sol[:,i] = Theta0(fes,Order,alpha,mu,inout,evec[i],Tolerance,Maxsteps,epsi,i+1,Solver)
     print(' solved theta0 problems    ')
-    
+
     #Calculate the N0 tensor
     VolConstant = Integrate(1-mu**(-1),mesh)
     for i in range(3):
@@ -90,8 +91,8 @@ def FullSweep(Object,Order,alpha,inorout,mur,sig,Array,BigProblem):
                 N0[i,j] = (alpha**3)*(VolConstant+(1/4)*(Integrate(mu**(-1)*(InnerProduct(curl(Theta0i),curl(Theta0j))),mesh)))
             else:
                 N0[i,j] = (alpha**3/4)*(Integrate(mu**(-1)*(InnerProduct(curl(Theta0i),curl(Theta0j))),mesh))
-    
-    #Copy the tensor 
+
+    #Copy the tensor
     N0+=np.transpose(N0-np.eye(3)@N0)
 
 
@@ -105,33 +106,34 @@ def FullSweep(Object,Order,alpha,inorout,mur,sig,Array,BigProblem):
     fes2 = HCurl(mesh, order=Order, dirichlet="outer", complex=True, gradientdomains=dom_nrs_metal)
     #Count the number of degrees of freedom
     ndof2 = fes2.ndof
-    
+
     #Define the vectors for the right hand side
     xivec = [ CoefficientFunction( (0,-z,y) ), CoefficientFunction( (z,0,-x) ), CoefficientFunction( (-y,x,0) ) ]
-    
+
     #Solve the problem
     TensorArray, EigenValues = Theta1_Sweep(Array,mesh,fes,fes2,Theta0Sol,xivec,alpha,sigma,mu,inout,Tolerance,Maxsteps,epsi,Solver,N0,NumberofFrequencies,False,True,False,False)
-    
+
     print(' solved theta1 problems     ')
     print(' frequency sweep complete')
-    
+
     return TensorArray, EigenValues, N0, numelements
 
 
 
 #Function definition for a full order frequency sweep in parallel
-def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
+def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem,Stepmesh):
     Object = Object[:-4]+".vol"
     #Set up the Solver Parameters
     Solver,epsi,Maxsteps,Tolerance = SolverParameters()
-    
+
     #Loading the object file
     ngmesh = ngmeshing.Mesh(dim=3)
     ngmesh.Load("VolFiles/"+Object)
-    
+
     #Creating the mesh and defining the element types
     mesh = Mesh("VolFiles/"+Object)
-    mesh.Curve(5)#This can be used to refine the mesh
+    if Stepmesh ==  False:
+        mesh.Curve(5)#This can be used to refine the mesh
     numelements = mesh.ne#Count the number elements
     print(" mesh contains "+str(numelements)+" elements")
 
@@ -146,7 +148,7 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
     inout = CoefficientFunction(inout_coef)
     sigma_coef = [sig[mat] for mat in mesh.GetMaterials() ]
     sigma = CoefficientFunction(sigma_coef)
-    
+
     #Set up how the tensor and eigenvalues will be stored
     N0=np.zeros([3,3])
     TensorArray=np.zeros([NumberofFrequencies,9], dtype=complex)
@@ -165,15 +167,15 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
     fes = HCurl(mesh, order=Order, dirichlet="outer", flags = { "nograds" : True })
     #Count the number of degrees of freedom
     ndof = fes.ndof
-    
+
     #Define the vectors for the right hand side
     evec = [ CoefficientFunction( (1,0,0) ), CoefficientFunction( (0,1,0) ), CoefficientFunction( (0,0,1) ) ]
-    
+
     #Setup the grid functions and array which will be used to save
     Theta0i = GridFunction(fes)
     Theta0j = GridFunction(fes)
     Theta0Sol = np.zeros([ndof,3])
-    
+
     #Setup the inputs for the functions to run
     Theta0CPUs = min(3,multiprocessing.cpu_count(),CPUs)
     Runlist = []
@@ -187,7 +189,7 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
     with multiprocessing.Pool(Theta0CPUs) as pool:
         Output = pool.starmap(Theta0, Runlist)
     print(' solved theta0 problems    ')
-    
+
     #Unpack the outputs
     for i,Direction in enumerate(Output):
         Theta0Sol[:,i] = Direction
@@ -215,10 +217,10 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
     fes2 = HCurl(mesh, order=Order, dirichlet="outer", complex=True, gradientdomains=dom_nrs_metal)
     #Count the number of degrees of freedom
     ndof2 = fes2.ndof
-    
+
     #Define the vectors for the right hand side
     xivec = [ CoefficientFunction( (0,-z,y) ), CoefficientFunction( (z,0,-x) ), CoefficientFunction( (-y,x,0) ) ]
-    
+
     #Work out where to send each frequency
     Theta1_CPUs = min(NumberofFrequencies,multiprocessing.cpu_count(),CPUs)
     Core_Distribution = []
@@ -226,7 +228,7 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
     for i in range(Theta1_CPUs):
         Core_Distribution.append([])
         Count_Distribution.append([])
-    
+
     #Distribute between the cores
     CoreNumber = 0
     count = 1
@@ -239,25 +241,24 @@ def FullSweepMulti(Object,Order,alpha,inorout,mur,sig,Array,CPUs,BigProblem):
             count = 1
         else:
             CoreNumber +=count
-    
+
     #Create the inputs
     Runlist = []
     manager = multiprocessing.Manager()
     counter = manager.Value('i', 0)
     for i in range(Theta1_CPUs):
         Runlist.append((Core_Distribution[i],mesh,fes,fes2,Theta0Sol,xivec,alpha,sigma,mu,inout,Tolerance,Maxsteps,epsi,Solver,N0,NumberofFrequencies,False,True,counter,False))
-    
+
     #Run on the multiple cores
     with multiprocessing.Pool(Theta1_CPUs) as pool:
         Outputs = pool.starmap(Theta1_Sweep, Runlist)
-    
+
     #Unpack the results
     for i,Output in enumerate(Outputs):
         for j,Num in enumerate(Count_Distribution[i]):
             TensorArray[Num,:] = Output[0][j]
             EigenValues[Num,:] = Output[1][j]
-    
+
     print("Frequency Sweep complete")
-    
+
     return TensorArray, EigenValues, N0, numelements
-    

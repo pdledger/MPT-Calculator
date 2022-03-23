@@ -38,7 +38,7 @@ def Meshmaker(Geometry,Mesh):
 def VolMatUpdater(Geometry,OldMesh):
     #Remove the .geo part of the file extention
     objname=Geometry[:-4]
-    
+
     #This part creates a list of materials in the order they appear
     #Create how the materials will be saved
     matlist=[]
@@ -122,7 +122,7 @@ def VolMatUpdater(Geometry,OldMesh):
             elif orderedmatlist.count(mat)==1 and mat=="air":
                 murlist.append(1)
                 siglist.append(0)
-                        
+
     #Reorder the list so each material just appears once
     for mat in orderedmatlist:
         if mat not in matlist:
@@ -134,17 +134,18 @@ def VolMatUpdater(Geometry,OldMesh):
         else:
             inout.append(1)
     f.close()
-    
-    
-    
-    
+
+
+
+
     #extract the number of boundaries and the outer boundaries
     #Read the .vol file
     f=open("VolFiles/"+objname+".vol","r")
     f1 = f.readlines()
     #Find the line where it says how many surface elements there are
     for line in f1:
-        if line[:-1]=="surfaceelements":
+        #if line[:-1]=="surfaceelements":
+        if line[:-1]=="surfaceelements" or line[:-1]=="surfaceelementsuv":
             linenum=f1.index(line)
             break
     surfnumstr=f1[linenum+1]
@@ -164,7 +165,7 @@ def VolMatUpdater(Geometry,OldMesh):
         if int(segline[2])>maxbound:
             maxbound=int(segline[2])
     f.close()
-    
+
     if OldMesh == False:
         #Create the new lines which are to be added to the .vol file
         #define how many regions there are
@@ -198,7 +199,7 @@ def VolMatUpdater(Geometry,OldMesh):
                     newlines.append(str(i+1)+' default\n')
         newlines.append('\n')
         newlines.append('\n')
-            
+
 
 
         #Find where the lines should be added
@@ -213,7 +214,7 @@ def VolMatUpdater(Geometry,OldMesh):
         pointnum=int(pointnumstr)
         firsthalf=f1[:linenum+pointnum+2]
         secondhalf=f1[linenum+pointnum+2:]
-    
+
         #Stick the lists together
         newfile=firsthalf+newlines+secondhalf
         f.close()
@@ -221,9 +222,9 @@ def VolMatUpdater(Geometry,OldMesh):
         for line in newfile:
             f.write(line)
         f.close()
-    
+
     inorout=dict(zip(matlist,inout))
     mur=dict(zip(matlist,murlist))
     sig=dict(zip(matlist,siglist))
-    
+
     return matlist, mur, sig, inorout
