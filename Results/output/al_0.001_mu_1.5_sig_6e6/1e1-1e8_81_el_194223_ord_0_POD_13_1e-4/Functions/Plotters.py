@@ -50,48 +50,48 @@ def TickFormatter(value,tick_number):
 def PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
-    
+
     #Retrieve the settings for the plot
     Title, Show, ETP, _, MLS, MMS, SLS, SMS, _, _, ECL = PlotterSettings()
-    
+
     #Plot the real graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(ETP):
         if i==0:
             lines = ax.plot(Array,EigenValues[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
         else:
             lines += ax.plot(Array,EigenValues[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
-    
+
     #Plot the snapshots
     for i,line in enumerate(ETP):
         lines += ax.plot(PODArray,PODEigenValues[:,line-1].real,SLS,markersize=SMS,color=PYCOL[i])
-    
+
     ymin, ymax = ax.get_ylim()
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\lambda(\mathcal{N}^0+\mathcal{R})$")
-    
+
     #Title
     if Title==True:
         plt.title(r"Eigenvalues of $\mathcal{N}^0+\mathcal{R}$")
-    
+
     #Create the legend
     names = []
     for i,number in enumerate(ETP):
         names.append(r"$\lambda_{"+str(number)+"}(\mathcal{N}^0+\mathcal{R})$ (POD)")
     for i,number in enumerate(ETP):
         names.append(r"$\lambda_{"+str(number)+"}(\mathcal{N}^0+\mathcal{R})$ (Snapshot)")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
@@ -99,53 +99,53 @@ def PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues,EddyCurrent
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
             names.append(r"eddy-current model valid")
-    
+
     #Make the legend
     ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"RealEigenvalues.pdf")
-    
-    
-    
+
+
+
     #Plot the imaginary graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(ETP):
         if i==0:
             lines = ax.plot(Array,EigenValues[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
         else:
             lines += ax.plot(Array,EigenValues[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
-    
+
     #Plot the snapshots
     for i,line in enumerate(ETP):
         lines += ax.plot(PODArray,PODEigenValues[:,line-1].imag,SLS,markersize=SMS,color=PYCOL[i])
-    
+
     ymin, ymax = ax.get_ylim()
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\lambda(\mathcal{I})$")
-    
+
     #Title
     if Title==True:
         plt.title(r"Eigenvalues of $\mathcal{I}$")
-    
+
     #Create the legend
     names = []
     for i,number in enumerate(ETP):
         names.append(r"$\lambda_{"+str(number)+"}(\mathcal{I})$ (POD)")
     for i,number in enumerate(ETP):
         names.append(r"$\lambda_{"+str(number)+"}(\mathcal{I})$ (Snapshot)")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
@@ -153,55 +153,220 @@ def PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues,EddyCurrent
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
             names.append(r"eddy-current model valid")
-    
+
     #Make the legend
     ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"ImaginaryEigenvalues.pdf")
-    
+
+    return Show
+
+def PODInvPlotter(savename,Array,PODArray,EigenValues,PODEigenValues,EddyCurrentTest):
+    #Create a way to reference xkcd colours
+    PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
+
+    #Retrieve the settings for the plot
+    Title, Show, ETP, _, MLS, MMS, SLS, SMS, _, _, ECL = PlotterSettings()
+
+    #Plot the real graph
+    fig, ax = plt.subplots()
+
+    #Setup data
+    Points = len(Array)
+    Inv=np.zeros([Points,3], dtype=complex)
+    PODPoints = len(PODArray)
+    PODInv=np.zeros([PODPoints,3], dtype=complex)
+
+
+    #Overwrite with Invairnats
+    #I_1 = lambda_1 + lambda_2 + lambda_3
+    #I_2 = lambda_1 * lambda_2 + lambda_1 * lambda_3 + lambda_2 * lambda_3
+    #I_3 = lambda_1 * lambda_2 * lambda_3
+    for i in range(Points):
+        Inv[i,0]=EigenValues[i,0]+EigenValues[i,1]+EigenValues[i,2]
+        Inv[i,1]=(EigenValues[i,0].real*EigenValues[i,1].real+EigenValues[i,0].real*EigenValues[i,2].real+EigenValues[i,1].real*EigenValues[i,2].real)+1j*(EigenValues[i,0].imag*EigenValues[i,1].imag+EigenValues[i,0].imag*EigenValues[i,2].imag+EigenValues[i,1].imag*EigenValues[i,2].imag)
+        Inv[i,2]=(EigenValues[i,0].real*EigenValues[i,1].real*EigenValues[i,2].real)+1j*(EigenValues[i,0].imag*EigenValues[i,1].imag*EigenValues[i,2].imag)
+    for i in range(PODPoints):
+        PODInv[i,0]=PODEigenValues[i,0]+PODEigenValues[i,1]+PODEigenValues[i,2]
+        PODInv[i,1]=(PODEigenValues[i,0].real*PODEigenValues[i,1].real+PODEigenValues[i,0].real*PODEigenValues[i,2].real+PODEigenValues[i,1].real*PODEigenValues[i,2].real)+1j*(PODEigenValues[i,0].imag*PODEigenValues[i,1].imag+PODEigenValues[i,0].imag*PODEigenValues[i,2].imag+PODEigenValues[i,1].imag*PODEigenValues[i,2].imag)
+        PODInv[i,2]=(PODEigenValues[i,0].real*PODEigenValues[i,1].real*PODEigenValues[i,2].real)+1j*(PODEigenValues[i,0].imag*PODEigenValues[i,1].imag*PODEigenValues[i,2].imag)
+
+
+#   Plot Invariant 1
+    lines = ax.plot(Array,(Inv[:,0].real),MLS,markersize=MMS,color=PYCOL[0])
+    lines += ax.plot(PODArray,(PODInv[:,0].real),SLS,markersize=SMS,color=PYCOL[0])
+    lines += ax.plot(Array,(Inv[:,0].imag),MLS,markersize=MMS,color=PYCOL[1])
+    lines += ax.plot(PODArray,(PODInv[:,0].imag),SLS,markersize=SMS,color=PYCOL[1])
+    ymin, ymax = ax.get_ylim()
+    print(ymin,ymax)
+    #Format the axes
+    plt.xscale('log')
+    plt.ylim(ymin, ymax)
+    ax.grid(True)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
+    plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
+    #Label the axes
+    plt.xlabel("Frequency (rad/s)")
+    plt.ylabel(r"$I_1$")
+
+#Title
+    if Title==True:
+        plt.title(r"Invairant 1")
+
+#Create the legend
+    names = []
+    names.append(r"$I_1(\mathcal{N}^0+\mathcal{R})$ (POD)")
+    names.append(r"$I_1(\mathcal{N}^0+\mathcal{R})$ (Snapshot)")
+    names.append(r"$I_1(\mathcal{I})$ (POD)")
+    names.append(r"$I_1(\mathcal{I})$ (Snapshot)")
+
+#Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+
+#Make the legend
+    ax.legend(lines,names)
+
+#Save the graph
+    plt.savefig(savename+"Inv1.pdf")
+
+#Plot the real graph
+    fig, ax = plt.subplots()
+
+#   Plot Invariant 2
+    lines = ax.plot(Array,(Inv[:,1].real),MLS,markersize=MMS,color=PYCOL[0])
+    lines += ax.plot(PODArray,(PODInv[:,1].real),SLS,markersize=SMS,color=PYCOL[0])
+    lines += ax.plot(Array,(Inv[:,1].imag),MLS,markersize=MMS,color=PYCOL[1])
+    lines += ax.plot(PODArray,(PODInv[:,1].imag),SLS,markersize=SMS,color=PYCOL[1])
+    ymin, ymax = ax.get_ylim()
+    print(ymin,ymax)
+    #Format the axes
+    plt.xscale('log')
+    plt.ylim(ymin, ymax)
+    ax.grid(True)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
+    plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
+    #Label the axes
+    plt.xlabel("Frequency (rad/s)")
+    plt.ylabel(r"$I_2$")
+
+#Title
+    if Title==True:
+        plt.title(r"Invairant 2")
+
+#Create the legend
+    names = []
+    names.append(r"$I_2(\mathcal{N}^0+\mathcal{R})$ (POD)")
+    names.append(r"$I_2(\mathcal{N}^0+\mathcal{R})$ (Snapshot)")
+    names.append(r"$I_2(\mathcal{I})$ (POD)")
+    names.append(r"$I_2(\mathcal{I})$ (Snapshot)")
+
+#Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+
+#Make the legend
+    ax.legend(lines,names)
+
+#Save the graph
+    plt.savefig(savename+"Inv2.pdf")
+
+#Plot the real graph
+    fig, ax = plt.subplots()
+
+#   Plot Invariant 3
+    lines = ax.plot(Array,(Inv[:,2].real),MLS,markersize=MMS,color=PYCOL[0])
+    lines += ax.plot(PODArray,(PODInv[:,2].real),SLS,markersize=SMS,color=PYCOL[0])
+    lines += ax.plot(Array,(Inv[:,2].imag),MLS,markersize=MMS,color=PYCOL[1])
+    lines += ax.plot(PODArray,(PODInv[:,2].imag),SLS,markersize=SMS,color=PYCOL[1])
+    ymin, ymax = ax.get_ylim()
+    print(ymin,ymax)
+    #Format the axes
+    plt.xscale('log')
+    plt.ylim(ymin, ymax)
+    ax.grid(True)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
+    plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
+    #Label the axes
+    plt.xlabel("Frequency (rad/s)")
+    plt.ylabel(r"$I_3$")
+
+#Title
+    if Title==True:
+        plt.title(r"Invairant 3")
+
+#Create the legend
+    names = []
+    names.append(r"$I_3(\mathcal{N}^0+\mathcal{R})$ (POD)")
+    names.append(r"$I_3(\mathcal{N}^0+\mathcal{R})$ (Snapshot)")
+    names.append(r"$I_3(\mathcal{I})$ (POD)")
+    names.append(r"$I_3(\mathcal{I})$ (Snapshot)")
+
+#Show where the eddy-current breaks down (if applicable)
+    if isinstance(EddyCurrentTest, float):
+        if ECL == True:
+            x = np.ones(10)*EddyCurrentTest
+            y = np.linspace(ymin,ymax,10)
+            lines += ax.plot(x,y,'--r')
+            names.append(r"eddy-current model valid")
+
+#Make the legend
+    ax.legend(lines,names)
+
+#Save the graph
+    plt.savefig(savename+"Inv3.pdf")
+
     return Show
 
 
 def EigPlotter(savename,Array,EigenValues,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
-    
+
     #Retrieve the settings for the plot
     Title, Show, ETP, _, MLS, MMS, _, _, _, _, ECL = PlotterSettings()
-    
+
     #Plot the graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(ETP):
         if i==0:
             lines = ax.plot(Array,EigenValues[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
         else:
             lines += ax.plot(Array,EigenValues[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
-    
+
     ymin, ymax = ax.get_ylim()
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\lambda(\mathcal{N}^0+\mathcal{R})$")
-    
+
     #Title
     if Title==True:
         plt.title(r"Eigenvalues of $\mathcal{N}^0+\mathcal{R}$")
-    
+
     #Create the legend
     names = []
     for i,number in enumerate(ETP):
         names.append(r"$\lambda_{"+str(number)+"}(\mathcal{N}^0+\mathcal{R})$")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
@@ -209,46 +374,46 @@ def EigPlotter(savename,Array,EigenValues,EddyCurrentTest):
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
             names.append(r"eddy-current model valid")
-    
+
     #Make the legend
     ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"RealEigenvalues.pdf")
-    
-    
+
+
     #Plot the imaginary graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(ETP):
         if i==0:
             lines = ax.plot(Array,EigenValues[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
         else:
             lines += ax.plot(Array,EigenValues[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
-    
+
     ymin, ymax = ax.get_ylim()
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\lambda(\mathcal{I})$")
-    
+
     #Title
     if Title==True:
         plt.title(r"Eigenvalues of $\mathcal{I}$")
-    
+
     #Create the legend
     names = []
     for i,number in enumerate(ETP):
         names.append(r"$\lambda_{"+str(number)+"}(\mathcal{I})$")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
@@ -256,55 +421,55 @@ def EigPlotter(savename,Array,EigenValues,EddyCurrentTest):
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
             names.append(r"eddy-current model valid")
-    
+
     #Make the legend
     ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"ImaginaryEigenvalues.pdf")
-    
-    
+
+
     return Show
-    
+
 
 def PODTensorPlotter(savename,Array,PODArray,Values,PODValues,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
-    
+
     #Retrieve the settings for the plot
     Title, Show, _, TTP,MLS, MMS, SLS, SMS, _, _, ECL = PlotterSettings()
-    
+
     #Plot the graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(TTP):
         if i==0:
             lines = ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
         else:
             lines += ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
-    
+
     #Plot the snapshots
     for i,line in enumerate(TTP):
         lines += ax.plot(PODArray,PODValues[:,line-1].real,SLS,markersize=SMS,color=PYCOL[i])
-    
+
     ymin, ymax = ax.get_ylim()
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\mathcal{N}^0_{ij}+\mathcal{R}_{ij}$")
-    
+
     #Title
     if Title==True:
         plt.title(r"Tensor coefficients of $\mathcal{N}^0+\mathcal{R}$")
-    
+
     #Create the legend
     names = []
     CoefficientRef = ["11","12","13","22","23","33","21","31","_","32"]
@@ -318,7 +483,7 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues,EddyCurrentTest):
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Snapshot)")
         else:
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
@@ -326,7 +491,7 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues,EddyCurrentTest):
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
             names.append(r"eddy-current model valid")
-    
+
     #Shrink the size of the legend if there are to many lines
     if len(names)>7:
         ax.legend(lines,names,prop={'size':8})
@@ -335,38 +500,38 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues,EddyCurrentTest):
 
     #Save the graph
     plt.savefig(savename+"RealTensorCoeficients.pdf")
-    
-    
+
+
     #Plot the imaginary graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(TTP):
         if i==0:
             lines = ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
         else:
             lines += ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
-    
+
     #Plot the snapshots
     for i,line in enumerate(TTP):
         lines += ax.plot(PODArray,PODValues[:,line-1].imag,SLS,markersize=SMS,color=PYCOL[i])
-    
+
     ymin, ymax = ax.get_ylim()
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\mathcal{I}_{ij}$")
-    
+
     if Title==True:
         plt.title(r"Tensor coefficients of $\mathcal{I}$")
-    
+
     #Create the legend
     names = []
     for i,number in enumerate(TTP):
@@ -379,7 +544,7 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues,EddyCurrentTest):
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Snapshot)")
         else:
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
@@ -387,17 +552,17 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues,EddyCurrentTest):
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
             names.append(r"eddy-current model valid")
-    
+
     #Shrink the size of the legend if there are to many lines
     if len(names)>7:
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"ImaginaryTensorCoeficients.pdf")
 
-    
+
     return Show
 
 
@@ -405,36 +570,36 @@ def PODTensorPlotter(savename,Array,PODArray,Values,PODValues,EddyCurrentTest):
 def TensorPlotter(savename,Array,Values,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
-    
+
     #Retrieve the settings for the plot
     Title, Show, _, TTP, MLS, MMS, _, _, _, _, ECL = PlotterSettings()
-    
+
     #Plot the graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(TTP):
         if i==0:
             lines = ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
         else:
             lines += ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
-    
+
     ymin, ymax = ax.get_ylim()
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\mathcal{N}^0_{ij}+\mathcal{R}_{ij}$")
-    
+
     if Title==True:
         plt.title(r"Tensor coefficients of $\mathcal{N}^0+\mathcal{R}$")
-    
+
     #Create the legend
     names = []
     CoefficientRef = ["11","12","13","22","23","33","21","31","_","32"]
@@ -443,7 +608,7 @@ def TensorPlotter(savename,Array,Values,EddyCurrentTest):
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)")
         else:
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
@@ -451,40 +616,40 @@ def TensorPlotter(savename,Array,Values,EddyCurrentTest):
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
             names.append(r"eddy-current model valid")
-    
+
     #Make the legend
     ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"RealTensorCoeficients.pdf")
-    
-    
+
+
     #Plot the imaginary graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(TTP):
         if i==0:
             lines = ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
         else:
             lines += ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
-    
+
     ymin, ymax = ax.get_ylim()
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\mathcal{I}_{ij}$")
-    
+
     if Title==True:
         plt.title(r"Tensor coefficients of $\mathcal{I}$")
-    
+
     #Create the legend
     names = []
     for i,number in enumerate(TTP):
@@ -492,7 +657,7 @@ def TensorPlotter(savename,Array,Values,EddyCurrentTest):
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)")
         else:
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
@@ -500,14 +665,14 @@ def TensorPlotter(savename,Array,Values,EddyCurrentTest):
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
             names.append(r"eddy-current model valid")
-    
+
     #Make the legend
     ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"ImaginaryTensorCoeficients.pdf")
 
-    
+
     return Show
 
 
@@ -515,13 +680,13 @@ def TensorPlotter(savename,Array,Values,EddyCurrentTest):
 def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
-    
+
     #Retrieve the settings for the plot
     Title, Show, _, TTP,MLS, MMS, SLS, SMS, EBLS, EBMS, ECL = PlotterSettings()
-    
+
     #Plot the graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(TTP):
         if i==0:
@@ -534,43 +699,43 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors,EddyCurrentT
             lines += ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
             #Plot bottom error bars
             lines += ax.plot(Array,Values[:,line-1].real-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
-    
+
     #Plot the snapshots
     for i,line in enumerate(TTP):
         lines += ax.plot(PODArray,PODValues[:,line-1].real,SLS,markersize=SMS,color=PYCOL[i])
-    
+
     #Calculate the limits
     ymin = min(np.amin(Values.real),np.amin(PODValues.real))
     ymax = max(np.amax(Values.real),np.amax(PODValues.real))
     y_range = ymax-ymin
     ymin -= 0.05*y_range
     ymax += 0.05*y_range
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
             x = np.ones(10)*EddyCurrentTest
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
-        
+
     #Plot the top error bars (we plot them seperatly for the legend order)
     for i,line in enumerate(TTP):
         lines += ax.plot(Array,Values[:,line-1].real+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\mathcal{N}^0_{ij}+\mathcal{R}_{ij}$")
-    
+
     if Title==True:
         plt.title(r"Tensor coefficients of $\mathcal{N}^0+\mathcal{R}$")
-    
+
     #Create the legend
     names = []
     CoefficientRef = ["11","12","13","22","23","33","21","31","_","32"]
@@ -581,17 +746,17 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors,EddyCurrentT
         else:
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Certificate Bound)")
-    
+
     for i,number in enumerate(TTP):
         if number == 1 or number == 4 or number == 6:
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Snapshot)")
         else:
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
-    
+
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
             names.append(r"eddy-current model valid")
-    
+
     #Shrink the size of the legend if there are to many lines
     if len(names)>13:
         ax.legend(lines,names,prop={'size':5})
@@ -599,14 +764,14 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors,EddyCurrentT
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"RealTensorCoeficients.pdf")
-    
-    
+
+
     #Plot the imaginary graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(TTP):
         if i==0:
@@ -619,43 +784,43 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors,EddyCurrentT
             lines += ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
             #Plot bottom error bars
             lines += ax.plot(Array,Values[:,line-1].imag-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
-    
+
     #Plot the snapshots
     for i,line in enumerate(TTP):
         lines += ax.plot(PODArray,PODValues[:,line-1].imag,SLS,markersize=SMS,color=PYCOL[i])
-    
+
     #Calculate the limits
     ymin = min(np.amin(Values.imag),np.amin(PODValues.imag))
     ymax = max(np.amax(Values.imag),np.amax(PODValues.imag))
     y_range = ymax-ymin
     ymin -= 0.05*y_range
     ymax += 0.05*y_range
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
             x = np.ones(10)*EddyCurrentTest
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
-        
+
     #Plot the top error bars (we plot them seperatly for the legend order)
     for i,line in enumerate(TTP):
         lines += ax.plot(Array,Values[:,line-1].imag+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\mathcal{I}_{ij}$")
-    
+
     if Title==True:
         plt.title(r"Tensor coefficients of $\mathcal{I}$")
-    
+
     #Create the legend
     names = []
     for i,number in enumerate(TTP):
@@ -670,12 +835,12 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors,EddyCurrentT
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$) (Snapshot)")
         else:
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Snapshot)")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
             names.append(r"eddy-current model valid")
-    
+
     #Shrink the size of the legend if there are to many lines
     if len(names)>13:
         ax.legend(lines,names,prop={'size':5})
@@ -683,11 +848,11 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors,EddyCurrentT
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"ImaginaryTensorCoeficients.pdf")
 
-    
+
     return Show
 
 
@@ -696,13 +861,13 @@ def PODErrorPlotter(savename,Array,PODArray,Values,PODValues,Errors,EddyCurrentT
 def ErrorPlotter(savename,Array,Values,Errors,EddyCurrentTest):
     #Create a way to reference xkcd colours
     PYCOL=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf']
-    
+
     #Retrieve the settings for the plot
     Title, Show, _, TTP, MLS, MMS, _, _, EBLS, EBMS, ECL = PlotterSettings()
-    
+
     #Plot the graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(TTP):
         if i==0:
@@ -715,39 +880,39 @@ def ErrorPlotter(savename,Array,Values,Errors,EddyCurrentTest):
             lines += ax.plot(Array,Values[:,line-1].real,MLS,markersize=MMS,color=PYCOL[i])
             #Plot bottom error bars
             lines += ax.plot(Array,Values[:,line-1].real-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
-    
+
     #Calculate the limits
     ymin = np.amin(Values.real)
     ymax = np.amax(Values.real)
     y_range = ymax-ymin
     ymin -= 0.05*y_range
     ymax += 0.05*y_range
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
             x = np.ones(10)*EddyCurrentTest
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
-    
+
     #Plot the top error bars (we plot them seperatly for the legend order)
     for i,line in enumerate(TTP):
         lines += ax.plot(Array,Values[:,line-1].real+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\mathcal{N}^0_{ij}+\mathcal{R}_{ij}$")
-    
+
     if Title==True:
         plt.title(r"Tensor coefficients of $\mathcal{N}^0+\mathcal{R}$")
-    
+
     #Create the legend
     names = []
     CoefficientRef = ["11","12","13","22","23","33","21","31","_","32"]
@@ -758,12 +923,12 @@ def ErrorPlotter(savename,Array,Values,Errors,EddyCurrentTest):
         else:
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
             names.append(r"Re($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Re($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Certificate Bound)")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
             names.append(r"eddy-current model valid")
-    
+
     #Shrink the size of the legend if there are to many lines
     if len(names)>=13:
         ax.legend(lines,names,prop={'size':6})
@@ -771,14 +936,14 @@ def ErrorPlotter(savename,Array,Values,Errors,EddyCurrentTest):
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"RealTensorCoeficients.pdf")
-    
-    
+
+
     #Plot the imaginary graph
     fig, ax = plt.subplots()
-    
+
     #Plot the mainlines
     for i,line in enumerate(TTP):
         if i==0:
@@ -791,39 +956,39 @@ def ErrorPlotter(savename,Array,Values,Errors,EddyCurrentTest):
             lines += ax.plot(Array,Values[:,line-1].imag,MLS,markersize=MMS,color=PYCOL[i])
             #Plot bottom error bars
             lines += ax.plot(Array,Values[:,line-1].imag-Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
-    
+
     #Calculate the limits
     ymin = np.amin(Values.imag)
     ymax = np.amax(Values.imag)
     y_range = ymax-ymin
     ymin -= 0.05*y_range
     ymax += 0.05*y_range
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
             x = np.ones(10)*EddyCurrentTest
             y = np.linspace(ymin,ymax,10)
             lines += ax.plot(x,y,'--r')
-    
+
     #Plot the top error bars (we plot them seperatly for the legend order)
     for i,line in enumerate(TTP):
         lines += ax.plot(Array,Values[:,line-1].imag+Errors[:,line-1],EBLS,markersize=EBMS,color=PYCOL[i])
-    
+
     #Format the axes
     plt.xscale('log')
     plt.ylim(ymin, ymax)
     ax.grid(True)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(TickFormatter))
     plt.subplots_adjust(wspace=0.6, hspace=0.6, left=0.15, bottom=0.1, right=0.94, top=0.90)
-    
+
     #Label the axes
     plt.xlabel("Frequency (rad/s)")
     plt.ylabel(r"$\mathcal{I}_{ij}$")
-    
+
     if Title==True:
         plt.title(r"Tensor coefficients of $\mathcal{I}$")
-    
+
     #Create the legend
     names = []
     for i,number in enumerate(TTP):
@@ -833,12 +998,12 @@ def ErrorPlotter(savename,Array,Values,Errors,EddyCurrentTest):
         else:
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$)")
             names.append(r"Im($\mathcal{M}_{"+CoefficientRef[number-1]+"}(\omega)$)=Im($\mathcal{M}_{"+CoefficientRef[number+4]+"}(\omega)$) (Certificate Bound)")
-    
+
     #Show where the eddy-current breaks down (if applicable)
     if isinstance(EddyCurrentTest, float):
         if ECL == True:
             names.append(r"eddy-current model valid")
-    
+
     #Shrink the size of the legend if there are to many lines
     if len(names)>=13:
         ax.legend(lines,names,prop={'size':6})
@@ -846,10 +1011,9 @@ def ErrorPlotter(savename,Array,Values,Errors,EddyCurrentTest):
         ax.legend(lines,names,prop={'size':8})
     else:
         ax.legend(lines,names)
-    
+
     #Save the graph
     plt.savefig(savename+"ImaginaryTensorCoeficients.pdf")
 
-    
-    return Show
 
+    return Show

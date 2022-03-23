@@ -49,7 +49,7 @@ def FtoS(value):
         newvalue += "e"+str(power)
 
     return newvalue
-    
+
 
 def DictionaryList(Dictionary,Float):
     ParameterList=[]
@@ -65,16 +65,16 @@ def DictionaryList(Dictionary,Float):
                     newval=newval[:-1]
             ParameterList.append(newval)
     ParameterList = ','.join(ParameterList)
-    
+
     return ParameterList
 
 
 
 def SingleSave(Geometry, Omega, MPT, EigenValues, N0, elements, alpha, Order, MeshSize, mur, sig, EddyCurrentTest):
-    
+
     #Find how the user wants the data to be saved
     FolderStructure = SaverSettings()
-    
+
     if FolderStructure=="Default":
         #Create the file structure
         #Define constants for the folder name
@@ -88,7 +88,7 @@ def SingleSave(Geometry, Omega, MPT, EigenValues, N0, elements, alpha, Order, Me
         sweepname = objname+"/"+subfolder1+"/"+subfolder2
     else:
         sweepname = FolderStructure
-    
+
     #Save the data
     np.savetxt("Results/"+sweepname+"/Data/MPT.csv",MPT, delimiter=",")
     np.savetxt("Results/"+sweepname+"/Data/Eigenvalues.csv",EigenValues, delimiter=",")
@@ -97,16 +97,16 @@ def SingleSave(Geometry, Omega, MPT, EigenValues, N0, elements, alpha, Order, Me
         f = open('Results/'+sweepname+'/Data/Eddy-current_breakdown.txt','w+')
         f.write('omega = '+str(round(EddyCurrentTest))[:-2])
         f.close()
-    
+
     return
 
 
 
 def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenValues, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors, EddyCurrentTest):
-    
+
     #Find how the user wants the data to be saved
     FolderStructure = SaverSettings()
-    
+
     if FolderStructure=="Default":
         #Create the file structure
         #Define constants for the folder name
@@ -120,14 +120,35 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
         strmur = DictionaryList(mur,False)
         strsig = DictionaryList(sig,True)
         strPODTol = FtoS(PODTol)
-    
+
         #Define the main folder structure
         subfolder1 = "al_"+str(alpha)+"_mu_"+strmur+"_sig_"+strsig
         subfolder2 = strminF+"-"+strmaxF+"_"+str(Points)+"_el_"+str(elements)+"_ord_"+str(Order)+"_POD_"+str(PODPoints)+"_"+strPODTol
         sweepname = objname+"/"+subfolder1+"/"+subfolder2
     else:
         sweepname = FolderStructure
-    
+
+    #Setup data
+    Points = len(Array)
+    Inv=np.zeros([Points,3], dtype=complex)
+    PODPoints = len(PODArray)
+    PODInv=np.zeros([PODPoints,3], dtype=complex)
+
+
+    #Overwrite with Invairnats
+    #I_1 = lambda_1 + lambda_2 + lambda_3
+    #I_2 = lambda_1 * lambda_2 + lambda_1 * lambda_3 + lambda_2 * lambda_3
+    #I_3 = lambda_1 * lambda_2 * lambda_3
+    for i in range(Points):
+        Inv[i,0]=EigenValues[i,0]+EigenValues[i,1]+EigenValues[i,2]
+        Inv[i,1]=(EigenValues[i,0].real*EigenValues[i,1].real+EigenValues[i,0].real*EigenValues[i,2].real+EigenValues[i,1].real*EigenValues[i,2].real)+1j*(EigenValues[i,0].imag*EigenValues[i,1].imag+EigenValues[i,0].imag*EigenValues[i,2].imag+EigenValues[i,1].imag*EigenValues[i,2].imag)
+        Inv[i,2]=(EigenValues[i,0].real*EigenValues[i,1].real*EigenValues[i,2].real)+1j*(EigenValues[i,0].imag*EigenValues[i,1].imag*EigenValues[i,2].imag)
+    for i in range(PODPoints):
+        PODInv[i,0]=PODEigenValues[i,0]+PODEigenValues[i,1]+PODEigenValues[i,2]
+        PODInv[i,1]=(PODEigenValues[i,0].real*PODEigenValues[i,1].real+PODEigenValues[i,0].real*PODEigenValues[i,2].real+PODEigenValues[i,1].real*PODEigenValues[i,2].real)+1j*(PODEigenValues[i,0].imag*PODEigenValues[i,1].imag+PODEigenValues[i,0].imag*PODEigenValues[i,2].imag+PODEigenValues[i,1].imag*PODEigenValues[i,2].imag)
+        PODInv[i,2]=(PODEigenValues[i,0].real*PODEigenValues[i,1].real*PODEigenValues[i,2].real)+1j*(PODEigenValues[i,0].imag*PODEigenValues[i,1].imag*PODEigenValues[i,2].imag)
+
+
     #Save the data
     np.savetxt("Results/"+sweepname+"/Data/Frequencies.csv",Array, delimiter=",")
     np.savetxt("Results/"+sweepname+"/Data/PODFrequencies.csv",PODArray, delimiter=",")
@@ -136,12 +157,14 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
     np.savetxt("Results/"+sweepname+"/Data/N0.csv",N0, delimiter=",")
     np.savetxt("Results/"+sweepname+"/Data/Tensors.csv",TensorArray, delimiter=",")
     np.savetxt("Results/"+sweepname+"/Data/PODTensors.csv",PODTensors, delimiter=",")
+    np.savetxt("Results/"+sweepname+"/Data/Inv.csv",Inv, delimiter=",")
+    np.savetxt("Results/"+sweepname+"/Data/PODInv.csv",PODInv, delimiter=",")
     if isinstance(EddyCurrentTest, float):
         f = open('Results/'+sweepname+'/Data/Eddy-current_breakdown.txt','w+')
         f.write('omega = '+str(round(EddyCurrentTest))[:-2])
         f.close()
-    
-    
+
+
     #Format the tensor arrays so they can be plotted
     PlottingTensorArray = np.zeros([Points,6],dtype=complex)
     PlottingPODTensors = np.zeros([PODPoints,6],dtype=complex)
@@ -153,20 +176,23 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
         ErrorTensors[:,[4,5]] = ErrorTensors[:,[5,4]]
     except:
         pass
-    
-    
+
+
     #Define where to save the graphs
     savename = "Results/"+sweepname+"/Graphs/"
-    
+
     #Plot the graphs
     Show = PODEigPlotter(savename,Array,PODArray,EigenValues,PODEigenValues,EddyCurrentTest)
-    
+
+    #Plot the graphs
+    Show = PODInvPlotter(savename,Array,PODArray,EigenValues,PODEigenValues,EddyCurrentTest)
+
     try:
         if ErrorTensors==False:
             Show = PODTensorPlotter(savename,Array,PODArray,PlottingTensorArray,PlottingPODTensors,EddyCurrentTest)
     except:
         Show = PODErrorPlotter(savename,Array,PODArray,PlottingTensorArray,PlottingPODTensors,ErrorTensors,EddyCurrentTest)
-        
+
         #Change the format of the error bars to the format of the Tensors
         Errors = np.zeros([Points,9])
         Errors[:,0] = ErrorTensors[:,0]
@@ -182,15 +208,15 @@ def PODSave(Geometry, Array, TensorArray, EigenValues, N0, PODTensors, PODEigenV
     #plot the graph if required
     if Show==True:
         plt.show()
-    
+
     return
 
 
 def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTol, elements, alpha, Order, MeshSize, mur, sig, ErrorTensors, EddyCurrentTest):
-    
+
     #Find how the user wants the data to be saved
     FolderStructure = SaverSettings()
-    
+
     if FolderStructure=="Default":
         #Create the file structure
         #Define constants for the folder name
@@ -204,7 +230,7 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
         strmur = DictionaryList(mur,False)
         strsig = DictionaryList(sig,True)
         strPODTol = FtoS(PODTol)
-    
+
         #Define the main folder structure
         subfolder1 = "al_"+str(alpha)+"_mu_"+strmur+"_sig_"+strsig
         if Pod==True:
@@ -214,7 +240,7 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
         sweepname = objname+"/"+subfolder1+"/"+subfolder2
     else:
         sweepname = FolderStructure
-    
+
     #Save the data
     np.savetxt("Results/"+sweepname+"/Data/Frequencies.csv",Array, delimiter=",")
     np.savetxt("Results/"+sweepname+"/Data/Eigenvalues.csv",EigenValues, delimiter=",")
@@ -226,7 +252,7 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
         f = open('Results/'+sweepname+'/Data/Eddy-current_breakdown.txt','w+')
         f.write('omega = '+str(round(EddyCurrentTest))[:-2])
         f.close()
-    
+
     #Format the tensor arrays so they can be plotted
     PlottingTensorArray = np.zeros([Points,6],dtype=complex)
     PlottingTensorArray = np.concatenate([np.concatenate([TensorArray[:,:3],TensorArray[:,4:6]],axis=1),TensorArray[:,8:9]],axis=1)
@@ -236,13 +262,13 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
         ErrorTensors[:,[4,5]] = ErrorTensors[:,[5,4]]
     except:
         pass
-    
+
     #Define where to save the graphs
     savename = "Results/"+sweepname+"/Graphs/"
-    
+
     #Plot the graphs
     Show = EigPlotter(savename,Array,EigenValues,EddyCurrentTest)
-    
+
     if Pod == True:
         try:
             if ErrorTensors==False:
@@ -263,19 +289,19 @@ def FullSave(Geometry, Array, TensorArray, EigenValues, N0, Pod, PODArray, PODTo
             np.savetxt("Results/"+sweepname+"/Data/ErrorBars.csv",Errors, delimiter=",")
     else:
         Show = TensorPlotter(savename,Array,PlottingTensorArray,EddyCurrentTest)
-    
+
     #plot the graph if required
     if Show==True:
         plt.show()
-    
+
     return
-    
+
 
 def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, alpha, Order, MeshSize, mur, sig, ErrorTensors, VTK):
-    
+
     #Find how the user wants the data saved
     FolderStructure = SaverSettings()
-    
+
     if FolderStructure=="Default":
         #Create the file structure
         #Define constants for the folder name
@@ -290,19 +316,19 @@ def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, 
         strmur = DictionaryList(mur,False)
         strsig = DictionaryList(sig,True)
         strPODTol = FtoS(PODTol)
-        
+
         #Find out the number of elements in the mesh
         Object = Geometry[:-4]+".vol"
 
         #Loading the object file
         ngmesh = ngmeshing.Mesh(dim=3)
         ngmesh.Load("VolFiles/"+Object)
-    
+
         #Creating the mesh and defining the element types
         mesh = Mesh("VolFiles/"+Object)
         #mesh.Curve(5)#This can be used to refine the mesh
         elements = mesh.ne
-    
+
         #Define the main folder structure
         subfolder1 = "al_"+str(alpha)+"_mu_"+strmur+"_sig_"+strsig
         if Single==True:
@@ -315,29 +341,29 @@ def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, 
         sweepname = objname+"/"+subfolder1+"/"+subfolder2
     else:
         sweepname = FolderStructure
-    
+
     if Single==True:
         subfolders = ["Data","Input_files"]
     else:
         subfolders = ["Data","Graphs","Functions","Input_files"]
-    
+
     #Create the folders
     for folder in subfolders:
         try:
             os.makedirs("Results/"+sweepname+"/"+folder)
         except:
             pass
-    
+
     #Create the folders for the VTK output if required
     if VTK == True and Single == True:
         try:
             os.makedirs("Results/vtk_output/"+objname+"/om_"+stromega)
         except:
             pass
-        
+
         #Copy the .geo file to the folder
         copyfile("GeoFiles/"+Geometry,"Results/vtk_output/"+objname+"/om_"+stromega+"/"+Geometry)
-    
+
     #Copy the files required to be able to edit the graphs
     if Single!=True:
         copyfile("Settings/PlotterSettings.py","Results/"+sweepname+"/PlotterSettings.py")
@@ -353,7 +379,7 @@ def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, 
     copyfile("GeoFiles/"+Geometry,"Results/"+sweepname+"/Input_files/"+Geometry)
     copyfile("Settings/Settings.py","Results/"+sweepname+"/Input_files/Settings.py")
     copyfile("main.py","Results/"+sweepname+"/Input_files/main.py")
-    
+
     #Create a compressed version of the .vol file
     os.chdir('VolFiles')
     zipObj = ZipFile(objname+'.zip','w',ZIP_DEFLATED)
@@ -361,5 +387,5 @@ def FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, 
     zipObj.close()
     os.replace(objname+'.zip','../Results/'+sweepname+'/Input_files/'+objname+'.zip')
     os.chdir('..')
-    
+
     return

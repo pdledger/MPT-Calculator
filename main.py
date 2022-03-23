@@ -11,7 +11,7 @@
 
 #Geometry = "Shell_inside_cube_separate_bodies2.geo"
 #(string) Name of the .geo file to be used in the frequency sweep i.e.
-#Geometry = "sph_shell.geo"
+#Geometry = "sphere.geo"
 Geometry = "output.geo"
 
 

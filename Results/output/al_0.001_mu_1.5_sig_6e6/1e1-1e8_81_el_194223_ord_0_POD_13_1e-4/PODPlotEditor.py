@@ -41,9 +41,9 @@ savename = "Graphs/"
 
 #plot the graphs
 Show = PODEigPlotter(savename,Frequencies,PODFrequencies,Eigenvalues,PODEigenvalues,omega)
+Show = PODInvPlotter(savename,Frequencies,PODFrequencies,Eigenvalues,PODEigenvalues,omega)
 Show = PODTensorPlotter(savename,Frequencies,PODFrequencies,Tensors,PODTensors,omega)
 
 #plot the graph if required
 if Show==True:
     plt.show()
-    
