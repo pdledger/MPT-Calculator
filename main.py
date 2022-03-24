@@ -11,8 +11,8 @@
 
 #Geometry = "Shell_inside_cube_separate_bodies2.geo"
 #(string) Name of the .geo file to be used in the frequency sweep i.e.
-Geometry = "sph_shell.geo"
-#Geometry = "output.geo"
+#Geometry = "sph_shell.geo"
+Geometry = "output.geo"
 
 
 #Scaling to be used in the sweep in meters
@@ -91,6 +91,7 @@ from FullSolvers import *
 from PODSolvers import *
 from ResultsFunctions import *
 from Checkvalid import *
+from Centroid import *
 
 if __name__ == '__main__':
     #Load the default settings
@@ -128,6 +129,8 @@ if __name__ == '__main__':
     #Create the folders which will be used to save everything
     sweepname = FolderMaker(Geometry, Single, Array, Omega, Pod, PlotPod, PODArray, PODTol, alpha, Order, MeshSize, mur, sig, ErrorTensors, vtk_output)
 
+    # Find centroid
+    Centroid(Geometry,alpha,inorout,Stepmesh)
 
     #Run the sweep
 
