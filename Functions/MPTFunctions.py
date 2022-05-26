@@ -6,7 +6,7 @@
 import numpy as np
 from ngsolve import *
 
-    
+
 #Function definition to solve the Theta0 problem
 #Output -The solution to the theta0 problem as a (NGSolve) gridfunction
 def Theta0(fes,Order,alpha,mu,inout,e,Tolerance,Maxsteps,epsi,simnumber,Solver):
@@ -15,10 +15,10 @@ def Theta0(fes,Order,alpha,mu,inout,e,Tolerance,Maxsteps,epsi,simnumber,Solver):
         print(' solving theta0 %d/3' % (simnumber), end='\r')
     except:
         print(' solving the theta0 problem', end='\r')
-        
-    Theta=GridFunction(fes) 
+
+    Theta=GridFunction(fes)
     Theta.Set((0,0,0), BND)
-    
+
     #Test and trial functions
     u = fes.TrialFunction()
     v = fes.TestFunction()
@@ -36,7 +36,7 @@ def Theta0(fes,Order,alpha,mu,inout,e,Tolerance,Maxsteps,epsi,simnumber,Solver):
     if Solver=="local":
         c = Preconditioner(a,"local")#Apply the local preconditioner
     c.Update()
-    
+
     #Solve the problem
     f.vec.data += a.harmonic_extension_trans * f.vec
     res = f.vec.CreateVector()
@@ -45,7 +45,7 @@ def Theta0(fes,Order,alpha,mu,inout,e,Tolerance,Maxsteps,epsi,simnumber,Solver):
     Theta.vec.data += inverse * res
     Theta.vec.data += a.inner_solve * f.vec
     Theta.vec.data += a.harmonic_extension * Theta.vec
-    
+
     Theta_Return = np.zeros([fes.ndof])
     Theta_Return[:] = Theta.vec.FV().NumPy()
     return Theta_Return
@@ -64,7 +64,7 @@ def Theta1(fes,fes2,Theta0Sol,xi,Order,alpha,nu,sigma,mu,inout,Tolerance,Maxstep
             print(' solving theta1 %d/%d    ' % (simnumber,outof), end='\r')
         except:# This is for the single frequency case with 3 CPUs
             print(' solving the theta1 problem  ', end='\r')
-        
+
     Theta0=GridFunction(fes)
     Theta0.vec.FV().NumPy()[:]=Theta0Sol
     Theta=GridFunction(fes2)
@@ -98,7 +98,7 @@ def Theta1(fes,fes2,Theta0Sol,xi,Order,alpha,nu,sigma,mu,inout,Tolerance,Maxstep
     Theta.vec.data += inverse * res
     Theta.vec.data += a.inner_solve * f.vec
     Theta.vec.data += a.harmonic_extension * Theta.vec
-    
+
     Theta_Return = np.zeros([fes2.ndof],dtype=complex)
     Theta_Return[:] = Theta.vec.FV().NumPy()
     return Theta_Return
@@ -110,6 +110,8 @@ def Theta1_Sweep(Array,mesh,fes,fes2,Theta0Sols,xivec,alpha,sigma,mu,inout,Toler
     #Setup variables
     Mu0 = 4*np.pi*10**(-7)
     nu_no_omega = Mu0*(alpha**2)
+    nu_no_omega_noM = (alpha**2)
+
     NOF = len(Array)
 
     #Setup where to store tensors
@@ -174,6 +176,7 @@ def Theta1_Sweep(Array,mesh,fes,fes2,Theta0Sols,xivec,alpha,sigma,mu,inout,Toler
         a += SymbolicBFI((mu**(-1)) * InnerProduct(curl(u),curl(v)))
         a += SymbolicBFI((1j) * inout * nu_no_omega * Omega * sigma * InnerProduct(u,v))
         a += SymbolicBFI((1j) * (1-inout) * epsi * InnerProduct(u,v))
+
         if Solver == "bddc":
             c = Preconditioner(a,"bddc")#Apply the bddc preconditioner
         a.Assemble()
@@ -183,13 +186,13 @@ def Theta1_Sweep(Array,mesh,fes,fes2,Theta0Sols,xivec,alpha,sigma,mu,inout,Toler
 
         #Calculate the inverse operator
         inverse = CGSolver(a.mat, c.mat, precision=Tolerance, maxsteps=Maxsteps)
-    
+
         #Solve in each direction
-        
+
         Theta1.Set((0,0,0), BND)
         Theta2.Set((0,0,0), BND)
         Theta3.Set((0,0,0), BND)
-        
+
         #e1
         res.data.FV().NumPy()[:] = f1.vec.FV().NumPy() * Omega
         res.data += a.harmonic_extension_trans * res.data
@@ -198,7 +201,7 @@ def Theta1_Sweep(Array,mesh,fes,fes2,Theta0Sols,xivec,alpha,sigma,mu,inout,Toler
         Theta1.vec.data += inverse * res
         Theta1.vec.data += a.inner_solve * ftemp.data
         Theta1.vec.data += a.harmonic_extension * Theta1.vec
-        
+
         #e2
         res.data.FV().NumPy()[:] = f2.vec.FV().NumPy() * Omega
         res.data += a.harmonic_extension_trans * res.data
@@ -207,7 +210,7 @@ def Theta1_Sweep(Array,mesh,fes,fes2,Theta0Sols,xivec,alpha,sigma,mu,inout,Toler
         Theta2.vec.data += inverse * res
         Theta2.vec.data += a.inner_solve * ftemp.data
         Theta2.vec.data += a.harmonic_extension * Theta2.vec
-        
+
         #e3
         res.data.FV().NumPy()[:] = f3.vec.FV().NumPy() * Omega
         res.data += a.harmonic_extension_trans * res.data
@@ -216,7 +219,7 @@ def Theta1_Sweep(Array,mesh,fes,fes2,Theta0Sols,xivec,alpha,sigma,mu,inout,Toler
         Theta3.vec.data += inverse * res
         Theta3.vec.data += a.inner_solve * ftemp.data
         Theta3.vec.data += a.harmonic_extension * Theta3.vec
-    
+
         if Vectors == True:
             Theta1Sols[:,k,0] = Theta1.vec.FV().NumPy()
             Theta1Sols[:,k,1] = Theta2.vec.FV().NumPy()
@@ -244,7 +247,7 @@ def Theta1_Sweep(Array,mesh,fes,fes2,Theta0Sols,xivec,alpha,sigma,mu,inout,Toler
                         Theta1j.vec.data=Theta2.vec.data
                     if j==2:
                         Theta1j.vec.data=Theta3.vec.data
-        
+
                     #Real and Imaginary parts
                     R[i,j]=-(((alpha**3)/4)*Integrate((mu**(-1))*(curl(Theta1j)*Conj(curl(Theta1i))),mesh)).real
                     I[i,j]=((alpha**3)/4)*Integrate(inout*nu_no_omega*Omega*sigma*((Theta1j+Theta0j+xij)*(Conj(Theta1i)+Theta0i+xii)),mesh).real
@@ -267,7 +270,7 @@ def Theta1_Sweep(Array,mesh,fes,fes2,Theta0Sols,xivec,alpha,sigma,mu,inout,Toler
 
 
 def Theta1_Lower_Sweep(Array,mesh,fes,fes2,Sols,u1Truncated,u2Truncated,u3Truncated,Theta0Sols,xivec,alpha,sigma,mu,inout,N0,TotalNOF,counter,PODErrorBars,alphaLB,G_Store):
-    
+
     #Setup variables
     Mu0 = 4*np.pi*10**(-7)
     nu_no_omega = Mu0*(alpha**2)
@@ -279,7 +282,7 @@ def Theta1_Lower_Sweep(Array,mesh,fes,fes2,Sols,u1Truncated,u2Truncated,u3Trunca
     Theta_1j=GridFunction(fes2)
     TensorArray = np.zeros([NOF,9],dtype=complex)
     EigenValues = np.zeros([NOF,3],dtype=complex)
-    
+
     if PODErrorBars == True:
         rom1 = np.zeros([1+2*cutoff,1],dtype=complex)
         rom2 = np.zeros([1+2*cutoff,1],dtype=complex)
@@ -292,23 +295,23 @@ def Theta1_Lower_Sweep(Array,mesh,fes,fes2,Sols,u1Truncated,u2Truncated,u3Trunca
         G12 = G_Store[:,:,3]
         G13 = G_Store[:,:,4]
         G23 = G_Store[:,:,5]
-    
+
     for k,omega in enumerate(Array):
 
         #This part is for obtaining the solutions in the lower dimensional space
         counter.value+=1
         print(' solving reduced order system %d/%d    ' % (counter.value,TotalNOF), end='\r')
-        
+
         #This part projects the problem to the higher dimensional space
         W1=np.dot(u1Truncated,Sols[:,k,0]).flatten()
         W2=np.dot(u2Truncated,Sols[:,k,1]).flatten()
         W3=np.dot(u3Truncated,Sols[:,k,2]).flatten()
-        
+
         #Calculate the tensors
         nu = omega*Mu0*(alpha**2)
         R=np.zeros([3,3])
         I=np.zeros([3,3])
-        
+
         for i in range(3):
             Theta_0i.vec.FV().NumPy()[:] = Theta0Sols[:,i]
             xii = xivec[i]
@@ -327,19 +330,19 @@ def Theta1_Lower_Sweep(Array,mesh,fes,fes2,Sols,u1Truncated,u2Truncated,u3Trunca
                     Theta_1j.vec.FV().NumPy()[:]=W2
                 if j==2:
                     Theta_1j.vec.FV().NumPy()[:]=W3
-                
+
                 #Real and Imaginary parts
                 R[i,j]=-(((alpha**3)/4)*Integrate((mu**(-1))*(curl(Theta_1j)*Conj(curl(Theta_1i))),mesh)).real
                 I[i,j]=((alpha**3)/4)*Integrate(inout*nu*sigma*((Theta_1j+Theta_0j+xij)*(Conj(Theta_1i)+Theta_0i+xii)),mesh).real
-        
+
         R+=np.transpose(R-np.diag(np.diag(R))).real
         I+=np.transpose(I-np.diag(np.diag(I))).real
 
         #Save in arrays
         TensorArray[k,:] = (N0+R+1j*I).flatten()
         EigenValues[k,:] = np.sort(np.linalg.eigvals(N0+R))+1j*np.sort(np.linalg.eigvals(I))
-        
-        
+
+
         if PODErrorBars==True:
             rom1[0,0] = omega
             rom2[0,0] = omega
@@ -352,23 +355,23 @@ def Theta1_Lower_Sweep(Array,mesh,fes,fes2,Sols,u1Truncated,u2Truncated,u3Trunca
             rom1[1+cutoff:,0] = -(Sols[:,k,0]*omega).flatten()
             rom2[1+cutoff:,0] = -(Sols[:,k,1]*omega).flatten()
             rom3[1+cutoff:,0] = -(Sols[:,k,2]*omega).flatten()
-            
+
             error1 = np.conjugate(np.transpose(rom1))@G1@rom1
             error2 = np.conjugate(np.transpose(rom2))@G2@rom2
             error3 = np.conjugate(np.transpose(rom3))@G3@rom3
             error12 = np.conjugate(np.transpose(rom1))@G12@rom2
             error13 = np.conjugate(np.transpose(rom1))@G13@rom3
             error23 = np.conjugate(np.transpose(rom2))@G23@rom3
-            
+
             error1 = abs(error1)**(1/2)
             error2 = abs(error2)**(1/2)
             error3 = abs(error3)**(1/2)
             error12 = error12.real
             error13 = error13.real
             error23 = error23.real
-            
+
             Errors=[error1,error2,error3,error12,error13,error23]
-            
+
             for j in range(6):
                 if j<3:
                     ErrorTensors[k,j] = ((alpha**3)/4)*(Errors[j]**2)/alphaLB
@@ -383,8 +386,8 @@ def Theta1_Lower_Sweep(Array,mesh,fes,fes2,Sols,u1Truncated,u2Truncated,u3Trunca
                     if j==5:
                         ErrorTensors[k,j] += (Errors[1]**2)+(Errors[2]**2)
                         ErrorTensors[k,j] = ((alpha**3)/(8*alphaLB))*((Errors[0]**2)+(Errors[1]**2)+ErrorTensors[k,j])
-    
-    
+
+
     if PODErrorBars == True:
         return TensorArray, EigenValues, ErrorTensors
     else:
@@ -406,7 +409,7 @@ def MPTCalculator(mesh,fes,fes2,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,Theta0Sol,xi
             print(' calculating tensor %d/%d    ' % (tennumber,outof), end='\r')
         except:#This is for the full sweep run consecutively (no print)
             pass
-    
+
     R=np.zeros([3,3])
     I=np.zeros([3,3])
     Theta0i=GridFunction(fes)
@@ -438,26 +441,3 @@ def MPTCalculator(mesh,fes,fes2,Theta1E1Sol,Theta1E2Sol,Theta1E3Sol,Theta0Sol,xi
     R+=np.transpose(R-np.diag(np.diag(R))).real
     I+=np.transpose(I-np.diag(np.diag(I))).real
     return R, I
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

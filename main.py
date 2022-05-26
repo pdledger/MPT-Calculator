@@ -11,21 +11,22 @@
 
 #Geometry = "Shell_inside_cube_separate_bodies2.geo"
 #(string) Name of the .geo file to be used in the frequency sweep i.e.
-#Geometry = "sph_shell.geo"
-Geometry = "output.geo"
+Geometry = "sphere.geo"
+#Geometry = "output.geo"
 
 
 #Scaling to be used in the sweep in meters
 #alpha = 0.0345 # shell raduis is 1 unit, but actual is 3.45cm
-alpha=0.001
+alpha=0.01
 #(float) scaling to be applied to the .geo file i.e. if you have defined
 #a sphere of unit radius in a .geo file   alpha = 0.01   would simulate a
 #sphere with a radius of 0.01m ( or 1cm)
+# output.geo - shell should be alpha=0.001
 
 
 #About the mesh
 #How fine should the mesh be
-MeshSize = 1
+MeshSize = 2
 #(int 1-5) this defines how fine the mesh should be for regions that do
 #not have maxh values defined for them in the .geo file (1=verycoarse,
 #5=veryfine)

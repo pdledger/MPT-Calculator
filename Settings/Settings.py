@@ -23,7 +23,7 @@ def DefaultSettings():
     #(float)
 
     #Use an old mesh
-    OldMesh = True
+    OldMesh = False
     #(boolean) Note that this still requires the relavent .geo file to obtain
     #information about the materials in the mesh
     #Use an old mesh
@@ -88,7 +88,7 @@ def SolverParameters():
 
     #regularisation
     epsi = 10**-10
-    #(float) regularisation to be used in the problem
+    #(float) regularisation to be used in the problem epsi = 10**-10
 
     #Maximum iterations to be used in solving the problem
     Maxsteps = 1500
