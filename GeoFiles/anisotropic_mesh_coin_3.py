@@ -26,6 +26,6 @@ outer_region = bounding_cylinder - cyl
 
 
 mesh = OCCGeometry(Glue([cyl, outer_region])).GenerateMesh()
-mesh.BoundaryLayer(boundary="default",thickness=[0.1], material="copper",
+mesh.BoundaryLayer(boundary="default",thickness=[0.025], material="copper",
                    domains="coin", outside=False)
 mesh.Save('test_coin_220607.vol')
