@@ -11,9 +11,10 @@
 
 #Geometry = "Shell_inside_cube_separate_bodies2.geo"
 #(string) Name of the .geo file to be used in the frequency sweep i.e.
-Geometry = "prism_copper_steel_coin.geo"
+#Geometry = "prism_copper_steel_coin.geo"
 #Geometry = "sphere.geo"
-#Geometry = "output.geo"
+Geometry = "outputstep.geo" # Shell from STL needs old mesh to be true in Settings.py
+#Geometry = "Eddylimittest.geo"
 
 
 #Scaling to be used in the sweep in meters
@@ -33,7 +34,7 @@ MeshSize = 2
 #5=veryfine)
 
 #The order of the elements in the mesh
-Order = 0
+Order = 2
 #(int) this defines the order of each of the elements in the mesh
 
 
@@ -92,7 +93,8 @@ from SingleSolve import SingleFrequency
 from FullSolvers import *
 from PODSolvers import *
 from ResultsFunctions import *
-from Checkvalid import *
+#from Checkvalid import *
+from Checkvalid_new import *
 from Centroid import *
 
 if __name__ == '__main__':
@@ -138,7 +140,7 @@ if __name__ == '__main__':
 
     #Check the validity of the eddy-current model for the object
     if EddyCurrentTest == True:
-        EddyCurrentTest = Checkvalid(Geometry,Order,alpha,inorout,mur,sig,Stepmesh)
+        EddyCurrentTest = Checkvalid_new(Geometry,Order,alpha,inorout,mur,sig,Stepmesh)
 
     if Single==True:
         if MultiProcessing!=True:
