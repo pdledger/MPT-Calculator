@@ -34,7 +34,7 @@ MeshSize = 2
 #5=veryfine)
 
 #The order of the elements in the mesh
-Order = 2
+Order = 4
 #(int) this defines the order of each of the elements in the mesh
 
 
