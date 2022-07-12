@@ -13,8 +13,8 @@
 #(string) Name of the .geo file to be used in the frequency sweep i.e.
 #Geometry = "prism_copper_steel_coin.geo"
 #Geometry = "sphere.geo"
-#Geometry = "outputstep.geo" # Shell from STL needs old mesh to be true in Settings.py
-Geometry = "output.geo"
+Geometry = "outputstep_0_04.geo" # Shell from STL needs old mesh to be true in Settings.py
+#Geometry = "output.geo"
 #Geometry = "Eddylimittest.geo"
 
 
