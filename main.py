@@ -13,7 +13,8 @@
 #(string) Name of the .geo file to be used in the frequency sweep i.e.
 #Geometry = "prism_copper_steel_coin.geo"
 #Geometry = "sphere.geo"
-Geometry = "outputstep.geo" # Shell from STL needs old mesh to be true in Settings.py
+#Geometry = "outputstep.geo" # Shell from STL needs old mesh to be true in Settings.py
+Geometry = "output.geo"
 #Geometry = "Eddylimittest.geo"
 
 
@@ -34,7 +35,7 @@ MeshSize = 2
 #5=veryfine)
 
 #The order of the elements in the mesh
-Order = 4
+Order = 2
 #(int) this defines the order of each of the elements in the mesh
 
 
