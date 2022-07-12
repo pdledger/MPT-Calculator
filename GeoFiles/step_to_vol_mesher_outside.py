@@ -10,12 +10,13 @@ def step_mesher(filename, output_filename='outputstepoutside.vol', add_boundary_
     geo.shape.mat('mat1')
     geo.shape.solids.name='mat1' # This sets the domain name. Does not have to match mat1 but is set to be the same for convience
     geo.shape.faces.name='default'
+    geo.shape.maxh = 2
 
     # Creating boundary box
     bounding_box = Box(Pnt(-1000, -1000, -1000), Pnt(1000,1000,1000))
     bounding_box.mat('air')
     bounding_box.bc('outer')
-    bounding_box.maxh = 200
+    bounding_box.maxh = 1000 #200
 
     # Adding bounding box to original geometry
     geo2 = OCCGeometry(Glue([geo.shape, bounding_box]))
