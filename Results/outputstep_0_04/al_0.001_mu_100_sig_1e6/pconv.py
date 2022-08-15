@@ -27,9 +27,9 @@ EigenValues1 = np.genfromtxt("1e1-1e8_81_el_62053_ord_1_POD_13_1e-4/Data/Eigenva
 
 EigenValues2 = np.genfromtxt("1e1-1e8_81_el_62053_ord_2_POD_13_1e-4/Data/Eigenvalues.csv",delimiter=",",dtype=complex)
 EigenValues3 = np.genfromtxt("1e1-1e8_81_el_62053_ord_3_POD_13_1e-4/Data/Eigenvalues.csv",delimiter=",",dtype=complex)
-EigenValues4 = np.genfromtxt("1e1-1e8_81_el_62053_ord_3_POD_13_1e-4/Data/Eigenvalues.csv",delimiter=",",dtype=complex)
+EigenValues4 = np.genfromtxt("1e1-1e8_81_el_62053_ord_4_POD_13_1e-4/Data/Eigenvalues.csv",delimiter=",",dtype=complex)
 
-pmax=4
+pmax=5
 
 #Retrieve the settings for the plot
 Title, Show, ETP, _, MLS, MMS, SLS, SMS, _, _, ECL = PlotterSettings()
